@@ -1,0 +1,8 @@
+Flask
+imapclient
+pyzmail
+spacy
+scikit-learn
+numpy
+scipy
+python-dotenv

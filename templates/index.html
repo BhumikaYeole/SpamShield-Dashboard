@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email Classification Dashboard</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      header {
+        text-align: center;
+        color: white;
+        margin-bottom: 40px;
+        animation: fadeInDown 0.8s ease;
+      }
+
+      header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      header p {
+        font-size: 1.1em;
+        opacity: 0.9;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .stat-card {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        animation: fadeInUp 0.8s ease;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      .stat-card h3 {
+        color: #666;
+        font-size: 0.9em;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+      }
+
+      .stat-value {
+        font-size: 2.5em;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+
+      .stat-card.total .stat-value {
+        color: #667eea;
+      }
+
+      .stat-card.spam .stat-value {
+        color: #ef4444;
+      }
+
+      .stat-card.ham .stat-value {
+        color: #10b981;
+      }
+
+      .stat-card.processing .stat-value {
+        color: #f59e0b;
+      }
+
+      .pulse {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #10b981;
+        animation: pulse 2s infinite;
+        margin-left: 10px;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.5;
+          transform: scale(1.1);
+        }
+      }
+
+      .main-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      @media (max-width: 1024px) {
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .live-analysis-section {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        animation: fadeInUp 1s ease;
+      }
+
+      .section-title {
+        color: #333;
+        font-size: 1.8em;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .live-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #ef4444;
+        animation: blink 1.5s infinite;
+      }
+
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      .analysis-container {
+        background: #f9fafb;
+        border-radius: 12px;
+        padding: 25px;
+        min-height: 400px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .analyzing {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6b7280;
+      }
+
+      .analyzing .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #e5e7eb;
+        border-top-color: #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .current-email {
+        animation: slideInScale 0.5s ease;
+      }
+
+      @keyframes slideInScale {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .email-detail {
+        margin-bottom: 20px;
+      }
+
+      .email-detail-label {
+        font-size: 0.85em;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+      }
+
+      .email-detail-content {
+        font-size: 1.05em;
+        color: #333;
+        font-weight: 500;
+        word-break: break-word;
+      }
+
+      .classification-result {
+        margin-top: 25px;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        animation: resultPop 0.5s ease;
+      }
+
+      @keyframes resultPop {
+        0% {
+          opacity: 0;
+          transform: scale(0.8);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      .classification-result.spam {
+        background: #fee2e2;
+        border: 2px solid #ef4444;
+      }
+
+      .classification-result.ham {
+        background: #d1fae5;
+        border: 2px solid #10b981;
+      }
+
+      .classification-icon {
+        font-size: 3em;
+        margin-bottom: 10px;
+      }
+
+      .classification-label {
+        font-size: 1.5em;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      .classification-result.spam .classification-label {
+        color: #991b1b;
+      }
+
+      .classification-result.ham .classification-label {
+        color: #065f46;
+      }
+
+      .classification-time {
+        font-size: 0.9em;
+        color: #6b7280;
+        margin-top: 10px;
+      }
+
+      .emails-section {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        animation: fadeInUp 1s ease;
+      }
+
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e5e7eb;
+      }
+
+      .section-header h2 {
+        color: #333;
+        font-size: 1.8em;
+      }
+
+      .filter-buttons {
+        display: flex;
+        gap: 10px;
+      }
+
+      .filter-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9em;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        text-decoration: none;
+      }
+
+      .filter-btn.active {
+        transform: scale(1.05);
+      }
+
+      .filter-btn.all {
+        background: #667eea;
+        color: white;
+      }
+
+      .filter-btn.all:hover {
+        background: #5568d3;
+      }
+
+      .filter-btn.spam {
+        background: #fecaca;
+        color: #991b1b;
+      }
+
+      .filter-btn.spam:hover {
+        background: #fca5a5;
+      }
+
+      .filter-btn.ham {
+        background: #a7f3d0;
+        color: #065f46;
+      }
+
+      .filter-btn.ham:hover {
+        background: #6ee7b7;
+      }
+
+      .email-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        max-height: 600px;
+        overflow-y: auto;
+        padding-right: 10px;
+      }
+
+      .email-list::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .email-list::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+      }
+
+      .email-list::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+      }
+
+      .email-list::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+
+      .email-item {
+        background: #f9fafb;
+        padding: 20px;
+        border-radius: 10px;
+        border-left: 4px solid #e5e7eb;
+        transition: all 0.3s ease;
+        animation: slideIn 0.5s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+      }
+
+      .email-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .email-item.spam {
+        border-left-color: #ef4444;
+        background: #fef2f2;
+      }
+
+      .email-item.ham {
+        border-left-color: #10b981;
+        background: #f0fdf4;
+      }
+
+      .email-item.new-email {
+        animation: highlightNew 2s ease;
+      }
+
+      @keyframes highlightNew {
+        0%,
+        100% {
+          background: #f9fafb;
+        }
+        50% {
+          background: #fef3c7;
+          transform: scale(1.02);
+        }
+      }
+
+      .email-item.spam.new-email {
+        animation: highlightNewSpam 2s ease;
+      }
+
+      @keyframes highlightNewSpam {
+        0%,
+        100% {
+          background: #fef2f2;
+        }
+        50% {
+          background: #fecaca;
+          transform: scale(1.02);
+        }
+      }
+
+      .email-item.ham.new-email {
+        animation: highlightNewHam 2s ease;
+      }
+
+      @keyframes highlightNewHam {
+        0%,
+        100% {
+          background: #f0fdf4;
+        }
+        50% {
+          background: #d1fae5;
+          transform: scale(1.02);
+        }
+      }
+
+      .email-content {
+        flex: 1;
+      }
+
+      .email-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .email-from {
+        font-weight: 600;
+        color: #333;
+        font-size: 1.05em;
+      }
+
+      .email-time {
+        color: #9ca3af;
+        font-size: 0.85em;
+      }
+
+      .email-subject {
+        color: #4b5563;
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+
+      .email-preview {
+        color: #6b7280;
+        font-size: 0.9em;
+        line-height: 1.5;
+      }
+
+      .email-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-left: 15px;
+        flex-shrink: 0;
+      }
+
+      .email-badge.spam {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      .email-badge.ham {
+        background: #d1fae5;
+        color: #065f46;
+      }
+
+      @keyframes fadeInDown {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #6b7280;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>📧 Email Classification Dashboard</h1>
+        <p>Real-time spam detection and analysis</p>
+      </header>
+
+      <div class="stats-grid">
+        <div class="stat-card total">
+          <h3>Total Emails</h3>
+          <div class="stat-value" id="totalCount">20</div>
+        </div>
+        <div class="stat-card spam">
+          <h3>Spam Detected</h3>
+          <div class="stat-value" id="spamCount">{{spam}}</div>
+        </div>
+        <div class="stat-card ham">
+          <h3>Legitimate Emails</h3>
+          <div class="stat-value" id="hamCount">{{ham}}</div>
+        </div>
+        <div class="stat-card processing">
+          <h3>System Status</h3>
+          <div class="stat-value" id="systemStatus" >
+          Inactive <span class="pulse"></span>
+        </div>
+        </div>
+      </div>
+
+      <div class="main-grid">
+        <div class="live-analysis-section">
+          <h2 class="section-title">
+            <span class="live-indicator"></span>
+            Live Analysis
+          </h2>
+          <button
+              id="toggleAnalysisBtn"
+              style="
+                margin-bottom: 20px;
+                padding: 10px 18px;
+                border-radius: 10px;
+                border: none;
+                cursor: pointer;
+                font-size: 0.95em;
+                font-weight: 600;
+                background: #667eea;
+                color: white;
+                transition: all 0.3s ease;
+              "
+              onclick="toggleLiveAnalysis()"
+            >
+              ▶ Start Live Analysis
+            </button>
+
+          <div class="analysis-container" id="analysisContainer">
+            <div class="analyzing">
+              <div class="spinner"></div>
+              <p style="font-size: 1.1em; font-weight: 500">
+                Waiting for incoming email...
+              </p>
+              <p style="font-size: 0.9em; margin-top: 10px">
+                New emails will be analyzed automatically
+              </p>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="emails-section" style="margin-bottom: 0">
+          <div
+            class="section-header"
+            style="margin-bottom: 15px; padding-bottom: 10px"
+          >
+            <h2>Recent Emails (Top 20)</h2>
+            <div class="filter-buttons">
+              <a
+                href = "/?filter=all" 
+                class="filter-btn all {% if active_filter == 'all' %} active {% endif %}"
+              >
+                All
+            </a>
+              <a
+               href = "/?filter=spam"
+               class="filter-btn spam {% if active_filter == 'spam' %} active {% endif %}" >
+                Spam
+              </a>
+            <a 
+             href = "/?filter=ham"
+             class="filter-btn ham {% if active_filter == 'ham' %} active {% endif %}" >
+                Legitimate
+            </a>
+            </div>
+          </div>
+
+          <div id="emailListContainer">
+          <div class="email-list" id="emailList">
+            {% if emails %} {% for email in emails[:20] %}
+            <div
+              class="email-item {{ email.type }} {% if loop.index0 == 0 and email.isNew %}new-email{% endif %}"
+              onclick="openEmailAnalysis(
+                  '{{ email.from | escape }}',
+                  '{{ email.subject | escape }}',
+                  '{{ email.preview | escape }}',
+                  '{{ email.type }}'
+                )"
+            >
+              <div class="email-content">
+                <div class="email-header">
+                  <span class="email-from">{{ email.from }}</span>
+                </div>
+                <div class="email-subject">{{ email.subject }}</div>
+                <div class="email-preview">{{ email.preview }}</div>
+              </div>
+              <div class="email-badge {{ email.type }}">
+                {% if email.type == 'spam' %} ⚠️ Spam {% else %} ✓ Safe {% endif
+                %}
+              </div>
+            </div>
+            {% endfor %} {% else %}
+            <div class="loading">
+              <p>No emails found</p>
+            </div>
+            {% endif %}
+          </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+
+      let currentAnalyzingEmail = null;
+
+
+      let liveAnalysisActive = true;
+      let liveInterval = null;
+      let originalEmailListHTML = null;
+
+
+
+      function toggleLiveAnalysis() {
+          const btn = document.getElementById("toggleAnalysisBtn");
+          const statusEl = document.getElementById("systemStatus");
+
+          liveAnalysisActive = !liveAnalysisActive;
+
+          if (liveAnalysisActive) {
+            btn.textContent = "⏸ Stop Live Analysis";
+            btn.style.background = "#ef4444";
+
+            statusEl.innerHTML = 'Active <span class="pulse"></span>';
+
+            fetch("/live")
+
+            liveInterval = setInterval(fetchLiveResult, 10000);
+          } else {
+            btn.textContent = "▶ Start Live Analysis";
+            btn.style.background = "#667eea";
+
+            statusEl.textContent = "Inactive";
+
+            clearInterval(liveInterval);
+            liveInterval = null;
+            fetch("/stop-live")
+
+            
+          }
+        }
+
+        function fetchLiveResult() {
+            fetch("/live-status")
+              .then(res => res.json())
+              .then(data => {
+                if (data.status === "waiting") return;
+
+                showEmailAnalysis(data);
+
+                // Add new email to the top of the list
+                data.isNew = true;
+                emails.unshift(data);
+                emails = emails.slice(0, 20);
+              })
+              .catch(err => console.error(err));
+          }
+
+      function showAnalyzing() {
+        const container = document.getElementById("analysisContainer");
+        container.innerHTML = `
+                <div class="analyzing">
+                    <div class="spinner"></div>
+                    <p style="font-size: 1.1em; font-weight: 500;">Analyzing incoming email...</p>
+                    <p style="font-size: 0.9em; margin-top: 10px;">Classification in progress</p>
+                </div>
+            `;
+      }
+
+      function showEmailAnalysis(email) {
+        const container = document.getElementById("analysisContainer");
+        const classType = email.type;
+        const icon = classType === "spam" ? "⚠️" : "✓";
+        const label =
+          classType === "spam" ? "SPAM DETECTED" : "LEGITIMATE EMAIL";
+
+        container.innerHTML = `
+                <div class="current-email">
+                    <div class="email-detail">
+                        <div class="email-detail-label">From</div>
+                        <div class="email-detail-content">${email.from}</div>
+                    </div>
+                    <div class="email-detail">
+                        <div class="email-detail-label">Subject</div>
+                        <div class="email-detail-content">${email.subject}</div>
+                    </div>
+                    <div class="email-detail">
+                        <div class="email-detail-label">Preview</div>
+                        <div class="email-detail-content">${email.preview}</div>
+                    </div>
+                    <div class="classification-result ${classType}">
+                        <div class="classification-icon">${icon}</div>
+                        <div class="classification-label">${label}</div>
+                        <div class="classification-time">Classified just now</div>
+                    </div>
+                </div>
+            `;
+      }
+
+      function openEmailAnalysis(from, subject, preview, type) {
+          const container = document.getElementById("emailListContainer");
+          if (!originalEmailListHTML) {
+            originalEmailListHTML = container.innerHTML;
+          }
+
+          const icon = type === "spam" ? "⚠️" : "✓";
+          const label = type === "spam" ? "SPAM DETECTED" : "LEGITIMATE EMAIL";
+
+          container.innerHTML = `
+            <button
+              onclick="restoreEmailList()"
+              style="
+                margin-bottom: 15px;
+                padding: 8px 14px;
+                border-radius: 8px;
+                border: none;
+                cursor: pointer;
+                font-size: 0.9em;
+                font-weight: 600;
+                background: #e5e7eb;
+                color: #333;
+              "
+            >
+              ← Back to Recent Emails
+            </button>
+
+            <div class="analysis-container">
+              <div class="current-email">
+                <div class="email-detail">
+                  <div class="email-detail-label">From</div>
+                  <div class="email-detail-content">${from}</div>
+                </div>
+
+                <div class="email-detail">
+                  <div class="email-detail-label">Subject</div>
+                  <div class="email-detail-content">${subject}</div>
+                </div>
+
+                <div class="email-detail">
+                  <div class="email-detail-label">Preview</div>
+                  <div class="email-detail-content">${preview}</div>
+                </div>
+
+                <div class="classification-result ${type}">
+                  <div class="classification-icon">${icon}</div>
+                  <div class="classification-label">${label}</div>
+                  <div class="classification-time">
+                    Analyzed from recent emails
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+
+        }
+
+        function restoreEmailList() {
+          const container = document.getElementById("emailListContainer");
+          container.innerHTML = originalEmailListHTML;
+          originalEmailListHTML = null;
+        }
+
+    </script>
+  </body>
+</html>
